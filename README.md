@@ -1,2 +1,0 @@
-# crudflask
-APi Flask CRUD 
