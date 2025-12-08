@@ -1,71 +1,49 @@
 import sqlite3
-from db_connect import connect_db
 from interfaces import LivroRepositoryInterface
+from models import db, LivroModel
 
 class LivroRepository(LivroRepositoryInterface):
     #obter livros
-    def get_all(self):
-        livros = [] 
-        conn = connect_db()
-        conn.row_factory = sqlite3.Row
-        cursor= conn.cursor()
-        cursor.execute("SELECT * FROM livros")
-        rows = cursor.fetchall()
-        for row in rows:
-            livros.append(dict(row))
-        conn.close() 
-        return livros
-
+    def get_all(self) -> list[dict]:
+        livros_objs = LivroModel.query.all()
+        return [livro.to_dict() for livro in livros_objs]
 
 # adicionar livros
-    def add(self,livro_data):
-        nome = livro_data.get('nome')
-        autor = livro_data.get('autor')
-        ano = livro_data.get('ano')
-        paginas = livro_data.get('paginas')
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO livros (nome, autor, ano, paginas)
-            VALUES (?, ?, ?, ?)
-        ''', (nome, autor, ano, paginas))
-        livro_data['id'] = cursor.lastrowid 
-        conn.commit() 
-        return livro_data     
-        conn.close()
+    def add(self, livro_data: dict) -> dict:
+        novo_livro = LivroModel(
+            nome=livro_data.get('nome'),
+            autor=livro_data.get('autor'),
+            ano=livro_data.get('ano'),
+            paginas=livro_data.get('paginas')
+        )
+        db.session.add(novo_livro)
+        db.session.commit()
+        
+        return novo_livro.to_dict()
+
 
     #deletar livros
-    def delete(self,id):
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('''
-            DELETE FROM livros
-            WHERE id = ?
-        ''', (id,))
-        
-        conn.commit()
-        conn.close()
-        return cursor.rowcount > 0 
+    def delete(self, id: int) -> bool:
+        livro = LivroModel.query.get(id)
+        if livro:
+            db.session.delete(livro)
+            db.session.commit()
+            return True
+        return False 
         
 
     #atualizar livro
-    def update(self,id, livro_data):
-        nome = livro_data.get('nome')
-        autor = livro_data.get('autor')
-        ano = livro_data.get('ano')
-        paginas = livro_data.get('paginas')
-        conn = connect_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            UPDATE livros
-            SET nome = ?, autor = ?, ano = ?, paginas = ?
-            WHERE id = ?
-        ''', (nome, autor, ano, paginas, id))
-        
-        conn.commit()
-        conn.close()
-        return cursor.rowcount > 0 
+    def update(self, id: int, livro_data: dict) -> bool:
+        livro = LivroModel.query.get(id)
+        if livro:
+            livro.nome = livro_data.get('nome', livro.nome)
+            livro.autor = livro_data.get('autor', livro.autor)
+            livro.ano = livro_data.get('ano', livro.ano)
+            livro.paginas = livro_data.get('paginas', livro.paginas)
+            
+            db.session.commit()
+            return True
+        return False 
 
    
 

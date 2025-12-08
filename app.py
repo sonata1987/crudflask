@@ -1,11 +1,20 @@
 import dados
 from flask import Flask, make_response, request, jsonify, json
 from dados import LivroRepository
-
-livro_repo = LivroRepository() 
+from models import db
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dados.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+livro_repo = LivroRepository()     
 
 @app.route('/livros', methods=['GET'])
 def get_all():
@@ -33,6 +42,7 @@ def update(id):
     return make_response(jsonify(livro_atualizado))
 
 
-app.run()
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
